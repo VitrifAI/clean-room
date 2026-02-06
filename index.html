@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitrifAI Clean Room | Air-Gapped Data Sanitizer</title>
+    <style>
+        /* VitrifAI Brand Colors */
+        :root {
+            --orange: #D65A18;
+            --dark: #0F172A;
+            --light: #F8FAFC;
+            --gray: #64748B;
+            --blue: #149dff;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            color: var(--dark);
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: -1px;
+        }
+
+        .header h1 span {
+            color: var(--orange);
+        }
+
+        .badge {
+            background: #E2E8F0;
+            color: var(--dark);
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        label {
+            font-weight: 700;
+            color: var(--gray);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 1rem;
+            border: 2px solid #E2E8F0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--orange);
+        }
+
+        #output {
+            background-color: #F8FAFC;
+            border-color: var(--blue);
+        }
+
+        .controls {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: var(--dark);
+            border-radius: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.1s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background-color: var(--orange);
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .btn-secondary {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .btn-copy {
+            background-color: var(--blue);
+            color: white;
+            margin-left: auto;
+        }
+
+        .stats {
+            color: #94A3B8;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Vitrif<span>AI</span> Clean Room</h1>
+        <div class="badge">Air-Gapped Data Sanitizer v.1.0</div>
+        <p style="color: var(--gray); max-width: 600px; margin: 1rem auto;">
+            This tool runs 100% in your browser. No data is sent to the cloud. 
+            You can disconnect your internet and it will still work. Visit <a href="https://www.vitrifai.com">vitrifai.com</a> for more.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <button class="btn-primary" onclick="sanitize()">RUN SCRUBBER</button>
+            <button class="btn-secondary" onclick="clearAll()">Clear</button>
+            <span class="stats" id="stats">Ready to sanitize...</span>
+            <button class="btn-copy" onclick="copyToClipboard()">Copy Clean Text</button>
+        </div>
+
+        <div class="panel">
+            <label>Input (Unsafe Data)</label>
+            <textarea id="input" placeholder="Paste messy emails, logs, or chat history here..."></textarea>
+        </div>
+
+        <div class="panel">
+            <label>Output (Safe for AI)</label>
+            <textarea id="output" readonly placeholder="Sanitized text will appear here..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        function sanitize() {
+            let text = document.getElementById('input').value;
+            let originalLength = text.length;
+            
+            // COUNTERS
+            let counts = { email: 0, phone: 0, card: 0, id: 0 };
+
+            // 1. EMAILS
+            text = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, () => {
+                counts.email++; return '[EMAIL_REDACTED]';
+            });
+
+            // 2. PH PHONE NUMBERS (+63 or 09)
+            text = text.replace(/(\+63|0)9\d{9}/g, () => {
+                counts.phone++; return '[PHONE_REDACTED]';
+            });
+
+            // 3. CREDIT CARDS (16 Digits)
+            text = text.replace(/\b(?:\d{4}[- ]?){3}\d{4}\b/g, () => {
+                counts.card++; return '[CC_REDACTED]';
+            });
+
+            // 4. COMMON IDs (TIN / SSS Format approx)
+            text = text.replace(/\b\d{3}-\d{3}-\d{3}\b/g, () => {
+                counts.id++; return '[ID_REDACTED]';
+            });
+
+            // UPDATE OUTPUT
+            document.getElementById('output').value = text;
+
+            // UPDATE STATS
+            let total = counts.email + counts.phone + counts.card + counts.id;
+            document.getElementById('stats').innerText = 
+                `Scrubbed ${total} items (${counts.email} emails, ${counts.phone} phones)`;
+        }
+
+        function copyToClipboard() {
+            let copyText = document.getElementById("output");
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value);
+            alert("Clean text copied to clipboard!");
+        }
+
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').value = '';
+            document.getElementById('stats').innerText = 'Ready to sanitize...';
+        }
+    </script>
+</body>
+</html>
